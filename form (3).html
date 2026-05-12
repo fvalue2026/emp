@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>نموذج صرف واستحقاق</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{font-family:-apple-system,Arial,sans-serif;background:#ccc;padding:12px;direction:rtl;font-size:13px;}
+.mgr{max-width:800px;margin:0 auto 10px;background:#442182;border-radius:8px;padding:8px 10px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.mgr-title{color:#fff;font-size:12px;font-weight:700;margin-left:auto;}
+.emp-tab{background:rgba(255,255,255,0.2);color:#fff;border:1.5px solid rgba(255,255,255,0.4);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;-webkit-user-select:none;}
+.emp-tab.active{background:#fff;color:#442182;}
+.del-x{width:17px;height:17px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:900;background:rgba(255,255,255,0.25);color:#fff;cursor:pointer;flex-shrink:0;}
+.emp-tab.active .del-x{background:#fee;color:#c00;}
+.btn-add{background:#fff;color:#442182;border:none;border-radius:6px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+.toolbar{max-width:800px;margin:0 auto 8px;display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;}
+.tb-btn{padding:8px 16px;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;}
+.tb-print{background:#442182;color:#fff;}
+.tb-share{background:#fff;color:#442182;border:1.5px solid #442182;}
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a2e;color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;font-weight:600;opacity:0;transition:all 0.3s;z-index:9999;white-space:nowrap;pointer-events:none;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.form-wrap{max-width:800px;margin:0 auto;background:#fff;border:2px solid #000;display:none;}
+.form-wrap.active{display:block;}
+.f-header{display:grid;grid-template-columns:200px 1fr 200px;border-bottom:1.5px solid #000;min-height:90px;}
+.hdr-r{padding:8px 12px;border-left:1.5px solid #000;display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:11.5px;font-weight:700;line-height:1.7;text-align:center;}
+.hdr-c{padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.hdr-c h1{font-size:16px;font-weight:800;line-height:1.25;}
+.hdr-c h1 span{font-size:13px;font-weight:700;}
+.hdr-l{padding:6px 10px;border-right:1.5px solid #000;display:flex;align-items:center;justify-content:center;}
+.hdr-l img{max-width:190px;max-height:75px;object-fit:contain;}
+.f-date{border-bottom:1.5px solid #000;padding:5px 12px;font-size:12px;font-weight:600;text-align:right;}
+.sec-hdr{background:#000;color:#fff;padding:5px 12px;display:flex;align-items:center;border-bottom:1.5px solid #000;}
+.sec-hdr .ar{font-size:12px;font-weight:700;}
+.sec-hdr .en{font-size:12px;font-weight:700;margin-right:auto;direction:ltr;}
+.info-tbl{border-bottom:1.5px solid #000;}
+.i-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ccc;}
+.i-row:last-child{border-bottom:none;}
+.i-cell{padding:5px 10px;display:flex;align-items:center;gap:3px;min-height:30px;}
+.i-cell.en{border-left:1.5px solid #000;direction:ltr;text-align:left;}
+.lbl{font-weight:700;white-space:nowrap;flex-shrink:0;font-size:12px;}
+[contenteditable]{outline:none;border-bottom:1px dashed transparent;min-width:10px;padding:1px 2px;cursor:text;flex:1;font-size:12px;font-family:inherit;-webkit-user-select:text;user-select:text;}
+[contenteditable]:focus{border-bottom-color:#442182;background:#f5f0ff;border-radius:2px;}
+.stmt-wrap{border-bottom:1.5px solid #000;}
+.s-tbl{width:100%;border-collapse:collapse;}
+.s-tbl th,.s-tbl td{border:1px solid #bbb;padding:5px 8px;text-align:center;vertical-align:middle;}
+.s-tbl thead th{background:#d5d5d5;font-weight:700;font-size:12px;}
+.s-tbl .tot td{background:#d5d5d5;font-weight:700;}
+.sub{font-size:10px;font-weight:400;display:block;}
+.s-tbl td [contenteditable]{display:block;width:100%;min-height:14px;}
+.f-notes{border-bottom:1.5px solid #000;min-height:45px;}
+.sig-tbl{width:100%;border-collapse:collapse;}
+.sig-tbl td{border:1px solid #bbb;padding:4px 6px;vertical-align:middle;font-size:11px;}
+.sig-role{background:#d5d5d5;font-weight:700;text-align:center;width:33.33%;}
+.sig-name{text-align:center;line-height:1.8;font-size:11px;}
+.sig-cv{padding:4px 6px;text-align:center;}
+.scw{position:relative;}
+canvas.sigpad{width:100%;height:68px;border:1.5px dashed #bbb;background:#fafafa;display:block;touch-action:none;border-radius:3px;cursor:crosshair;}
+canvas.sigpad.signed{border-color:#333;border-style:solid;background:#fff;}
+canvas.sigpad.locked{border:2px solid #2e7d32 !important;background:#f0fff4 !important;cursor:not-allowed;pointer-events:none;}
+.lbdg{display:none;font-size:9px;color:#fff;background:#2e7d32;border-radius:10px;padding:2px 8px;margin-top:3px;font-weight:700;}
+.clr-btn{margin-top:3px;width:100%;padding:3px;font-size:10.5px;font-family:inherit;font-weight:600;cursor:pointer;border:1px solid #ccc;border-radius:3px;background:#f5f5f5;}
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<div class="mgr" id="mgrBar">
+  <button class="btn-add" onclick="addEmp()">＋ إضافة موظف</button>
+  <span class="mgr-title">نماذج الموظفين</span>
+</div>
+<div class="toolbar">
+  <button class="tb-btn tb-share" onclick="shareLink()">🔗 مشاركة الرابط</button>
+  <button class="tb-btn tb-print" onclick="printCurrent()">🖨 طباعة / PDF</button>
+</div>
+<div id="container"></div>
+<script>
+
+var LOGO = 'data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAB/AZADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwD6pooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACiiigAooooAKKKKACo5Jo4yA7BSfWpKzdU/1yf7v9aALn2qH/AJ6LR9qh/wCei1j0U7AbH2qH/notH2qH/notY9FFgNj7VD/z0Wj7VD/z0WseiiwGx9qh/wCei0faof8AnotY9FFgNj7VD/z0Wj7VD/z0WseiiwGx9qh/56LR9qh/56LWPRRYDY+1Q/8APRaPtUP/AD0WseiiwGx9qh/56LR9qh/56LWPRRYDY+1Q/wDPRaPtUP8Az0WseiiwGx9qh/56LR9qh/56LWPRRYDY+1Q/89Fo+1Q/89FrHpKANn7VD/z0Wj7TD/z0WsfNG73osBsfaof+ei0faof+ei1k5ooA1vtUP/PRaPtUP/PRayaKANb7VD/z0Wj7VD/z0WsmigDW+1Q/89Fo+1Q/89FrJooA1vtUP/PRaPtUP/PRayaKANb7VD/z0Wj7VD/z0WsnNGaANcXMJIAkGTUtYsf+sT6itqkAUUUUAFFFFABRRRQAUUUUAFFFFABWbqn+uT/d/rWlWbqn+uT/AHf60AU6KKKYBRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABRRRQAUUUUAFFFFABXnHxmXW7PSoNX0PUr+2S3Oy5it5Sq7CeHIHcHg+xr0eoL21gvbOe1u4xLbzIY5EPRlIwRVwlyyTA+Wf+E08T/8AQwap/wCBLUDxt4oU5HiHVP8AwIaq/i/QpvDfiK80yfJETZjfH34zyrfl+oNY9eolFq6RR3mi/FbxNp0o+1XEeow4x5dwgB/76UA/nmvZvBXjvSfFUfl20n2e/UZe0mOH9yvZh9OfUV8uYqW0uJ7O6iubSV4Z4mDpIhwVI7isqmHjJaaMk+ygaUHNcb8M/Fy+LNBEk5RdStsR3KDAyezgdgf55rsK8+UXF2YDqKbmlzUgLSO6xozyMqooJLMcAAdyaXNeL/FnxhJd3kuiadKVs4TtuGU/61x/Dn0H6n6VrRpOrLlQG54r+KVvaStb6BGl3Ipw1xJny/8AgI6t/KvP7vx14muW3NrFxH7Q4jA/75FczRXr08NTgtEOxuf8Jd4i/wCg5qX/AIENU9l4k8UXt5Ba2utak88ziNF89uSTgVzleq/BXw9vkm125Q4QmG2z0J/ib8On50VnClByaEeraPbSWdlaW89xJczRqqyTSMWZ27kk+9dHWLH/AKxPqK2q8Nu+oBRRRSAKKKKACiiigAooooAKKKKACs3VP9cn+7/WtKs3VP8AXJ/u/wBaAKdRyzRRFRLIiFjhdzAZPtmpK4nxzeabNqNlYzWFxqN/EfMSGFyu3Pqe/QGmB2cUscyb4ZEkT+8jAj9KfXI+AtQ04RT6VaWk1jcQs0jwTNuPJGTn8uK66gAoorIsNbjvNd1DTFhdXswCZCRh8+g7daAL0l9axXsVnJcRrdSgskRPzMB6UC+tTfmx+0R/bAnmGHPzbfXFcprH/JTdE/64N/J6VP8Akq0v/XkP/QRQB2dFZHiTXbbQbJZ7hXkeQ7Yok6uf6Vlad4wEupw2Wp6bcae84HlNIchieg6DH1oA6e6uIbS3knuZFihjG53Y4CioJ9TsrewW9nuoktGAKys3ynPTms/xx/yKOq/9cf8A2YVzPij/AJJdY/7kX8jQB6CrB1DKQVYZBHcVFJcwROVlniRgNxDOAQPWm6dzp9r/ANck/wDQRXn3ia50rU9euhBpF3qc8MXlTSRSFQoHBwMH6UAekKwZQykMpGQQcg0tYfhDU7HUdGiXT1eNLZRC0TnLJgcDPf61uUAFFITgZJAHqa42fxyGkuW03Srm8tLf79wp2j64xQB2dFUNF1S21jT47y0JMbZBDDBVh1BqtNrscfiaHRjC5kliMolyMDgnGPwoA1pHSNC8jKiLyWY4ApiXELuqpNEzMNygOCSPUe1Yvja+sLTQpU1NHliuP3axIcM569e31rldI1HTbDWNNlvdHu9NIh8i3mlkLKFJPUYHqeaAG/HDwz/augLq1rGTeaeCXx/FCfvcex5/Ovnyvsx0V1ZJFV0YFWVhkEHqDXy38RPDTeF/E9xaIG+xy/vrZiOqE9PqDx+Fd2FqXXIxnMYoxS0V2Azpfh34kbwt4nt7x2Is5P3N0oGcxk9fqDg/hX1MrBlDIQykAhh0IPQ18YS8nbX0H8DvFH9q6AdIupM3mngBM5y8PY/gePyrixVO/vIR6bRRRXEBzXxA8QDw94cnnjZReTfubdT13Hq34Dn8q+dCSSSxJJOSSeTXrXxN8N+Jde1gTWtqk1hAmyCNJl3f7TEHGCT+gFebahoeq6a5W/067hI7tGSPzHFetg1CMN9WNGdRSHI6gj8KciSSECNHZj0CqSa7boZd0TTJ9Y1a1sLYHzJ3C5AztHdj7AZNfTWl2MGmadb2VooWCBAij6d/qev41598IPDEmnW0urahC0V3OPLhR8hkj7kjsSf0HvXpNeRjK3tJcq2QmSR/6xPqK2qw4/8AWJ/vCtyuNiCiiikAUUUUAFFFFABRRRQAUUUUAFZuqf65P93+taVZ2pjMqf7tAFGuEW8t9E+ImpS6qwgiuogYZnHygcd+3Qiu8NVNR02y1JES/torhUOVDjofamBwtxrOmH4jW19HfW/2QWxR5w3y7tpGCfXpXV/8JToP/QXs/wDvv/61H/CLaF/0C7b/AMe/xo/4RbQ/+gXb/r/jQAf8JToX/QXs/wDvv/61croWt6ZB421y7mvoEtp1URys2Ffp0rX8Q+HbW3sQ+jaFZ3NzvAKOSBt7nlhSaT4et5r6+j1HQLKC1jYfZ3Q5L+uec/nQBQnv7XU/iRo8mn3EdzGkLBmjOQDhqdeXttp3xNkuL6ZLeE2YUPIcDO0V1dhoum6dKZbGyhglI2l1Bzj05pdQ0jT9RdHv7OKdkGFLjkD04oA4rxLrOl3nivw/NFfW81pA5aVg2VT5upqP4ga3pupJpsFjdwzSpP5jSqflReByf1rrv+EW0L/oF2//AI9/jUieG9GSN0XTLYK4ww25z+dAGJ4v8Q6Pd+GtSgttStpZpItqIrZLHI9qz/FII+F9iCCDsh6/SuoHhfQwQRpdtkex/wAa0L6xtb+1+zXkEc0HB8thxx0oANP/AOQfa84/dJz/AMBFcN4H1Wy0RtUsdWuEtLoXRctLkBx9f1/GvQEVURVQAKoAAHYCqN/oum6hMJb6yhnlA2h2HOPTIoA4nwrrOmWfibxBNPe28NtO4aJi2Ff5mOR+ddb/AMJToP8A0FrP/vv/AOtSf8ItoX/QLtv/AB7/ABo/4RbQ/wDoF2/6/wCNAFXVfEuiy6XeRxaraNI0Lqqh+SSpwOlY3gfXtI0zwpFFeXkKTKzs8JPzt6ce4ro/+EW0P/oF2/8A49/jQPC2hD/mF234g/40Acr8PNa0yw0y7W9vre2MtyzpE7YIXA7f56U261nTW+I1nfLewG0S3KNNu+UHaeK6PXPD9gLG5nsdGtLi+xlEI2hjkD1A6VmadoPmalbxXvhywis2tw8sinJWXH3R82cZoAz/ABrrWmXOp6Fc293BdwW0xaaOM7iBkHOKk+Iet6XqegJHZX0FxMJ1cKp+YDnJrqP+EW0L/oF236/40f8ACLaF/wBAu3/X/GgDVtTm2hP/AEzX+QrjPi34Y/4SLwy8lum7ULHM0OOrLj50/EDI9xXbgADA6Uo6iqjJxfMgPjMDNKeBXc/Fnwx/wj/iaSa3QjT70maI9lbPzp+B5Hsa4Z+TivXjJSSaAiC5Oa3PB2uTeG/EFpqUG5libEsYP+sjP3l/L9QKyAKeq0ON1ZgfYVncw3tpDc2riSCZBIjjoVIyKx/FHizSfDBthq80iG4JCCOMucDqSB2rgfgh4njOnXGiX8yR/ZVaeB24Ai6uCf8AZ6/Qn0rz/wAea0fFPiG4v0kYW6/urdTyBGOn59fxrhp4VyqOL2Q0rnvGneOPDOpMqW2s2nmN0jkYxt+TYroYZkl5hlRx6xuG/lXyA9pJjgq3tUKNqNrOJLN54XHRopCp/Q1pLBW2YWZ9jOivxIit/vAGlQBFwgCgf3Rivk+Lxf4ziUJHrWqBR6y5/nXvnwmt9cHhhb3xNf3V1d3jCSOOc58mP+EfU9T+Fc9SjKmrtiO1ooorAB0X+sT/AHhW5WHF/rE/3hW5QwCiiikAUUUUAFFFFABRRRQAUUUUAFZ+pf61P93+taFZ+pf61P8Ad/rQBTNct4j8STaJrdjayWiPaXO39+WIK/Ng8Y7ZB/GuprjfilYG58PpdLw9pIG/4C3B/pTA69iFBLH5Rkk+1c/4S16bX0vJWto4YIZPLjIckv8AX8MfnVHVtcz8OhfeYBPcQLCDnneflb+RNQ6Zp2rWHguwi0QxQXch86ZpsDaGGe/TsKAO1rnta8QSaf4k0vTFt0kS8xukLEFcsRwK5oa94g0G/sxrctteWly23fGVbHIBwV7jPQ1Z8Xf8lB8Of8B/9DNAHeClrktM1q9n8eX+lySKbOFGKLsAIwF7/iaXX9avbPxhpGnwOotbgL5ilQScsw6/hQB1lFcXrOv6pfa3No/hxYkeAfvrmToCOoGeAOQPrUVnrus6Nq9rYeIzBPDdNhLiMj5TnHb3x+dAHc1jeJPENnoFur3JLzSA+XCn3m9/Ye9bNebPBHrXxRmiuwXgtuiHodijA+mTQBaj8Za7cKJrbw87QHkELI2R7HHP5V2OiXsmo6VbXc0Bt5JVy0RJJXnGOcVeHHA4A6Y7Vj+Jhq7WUY0J4Y5y/wC8klIAVMHnn3xQBsUV5y2veItBvLU61JbXtpcNs3RMpwcjOGXuM9DWj4y8R3+j69ZQ2YEsMkYZoduWkO4gAHqM8UAdrWR4m1K90vT1n0+wa+lMm0xru4GCc8A+g/OuV1C98Z6bGdSuVt2tVIZ7dACEU+uOR9c1b8ReKrgeELPVtKYQyTShGVl3bSFbI/MCgDoL7XbTT2sYr0ulxd7QkaqTycA59ME1rV5b44bU5de0eRmixIsbWnThvkzu/wCBV12pL4kOh2a2strHqQJ+1SMV2KOemePSgDpK57WvEEmneItM01bdJEuyNzliCuWxwK5xde8QaDqFouuPb3lpcttDxEHHIBwy9xkcGrHjD/kfvD3sV/8AQ6AO8ooPWigDmfiH4cXxN4ZuLRQPtcf762bGcSAdPoRx+NfLzRtG7JIrI6khlYYII6g19j14F8afDP8AZmvLqtsmLTUCS+OizD735jn867MJU15GB5sFqQLShaeFr0UgFiZ42LRuyMQVypxweCKS2ba5jP4VIFqK6QptlXqp5p7ajTsW80U1HDoGHQjNL3rU1Ol+H3h8+IvEUNvIp+xw/vrgj+4DwPxPH519HgBQAAAAMADtXJfDLw6dA8OR+eu29uiJpgRgrx8qfgP1Jrrq8XFVfaT02Rk3cKKKK5hDov8AWJ/vCtysOL/WJ/vCtyhgFFFFIAooooAKKKKACiiigAooooAKz9S/1qf7v9a0Kz9S/wBan+7/AFoAp1X1K1S+0+5tZACs0bJg+44/XFWKKYHiWmfaNQ/s/wAOupXZfMz7u3QMPww3511nxQmkS50q1kllh0yQnzWQehA/HC9q7WPS7CK8N3HZwLdEkmUJ82T15qW9s7a+g8m8gjniznbIuRn1pAeQeKrXQrKSxXQrtphv3Sjzd6qOMHpwetdJ4okSbx34YlidXjdUZWU8EFzgiuuHh7R1tzANNtfKJyV2d/Wp20yyMtvIbSEvbgLCxXmMDoB6UwOB+3waN8Tb+fUCYoZUID4JxuVcH6cVFqer2ur/ABA0aWxcvBEyR78EBjuYnHtzXoGoaVYaiVN9aQzsowC65IHpmkTSNOjeF0sbdXh/1ZCAFOc8fjQB5nfWVhbeM9Qi8QtdQW07tJDNE20Hccgng5HOPYitmHQ/CMt/awQalc3FxI/7tUuN/IGefl46V3N9Y2t/GEvbeKdR0Ei5x9PSq9loel2Mqy2lhbxSr0dU5H0NAGia838XR3fh7xbHr1tGZLaXHmYHGcbWUntkdDXpFNkRZI2SRQ6MMMrDII9DQBzEPjrQpIQ7XEkbYyUaIkg+nHBrB+IGqfb7PRJIZJY9LuiWdhwSMgcj2GTiuwPhrRTJ5h0y13dfucflVybTrKazW1ltIHtl+7EUG0fQdqAPJ/FVroNi1iuhXjTkybpF83eqjjB6cHrWx421COHxToeoQEXEKRpMvlnO9QxPFduvh7SFgMI0218snJHljk/WuT8RwxwePPDkMEapCioqoo4A3HigC54k8YaRL4fuUtLjzpriIoiBSCM8ZbPTFc1rFnLZfDHT0uEZHe6Mu1hggFWx+g/WvRU0DSEufPXTbUS5zu8scH6dKuXtnbX0QivYI7iMHcFkXIz6/rQBwHjmRYL3wrPKdsUaqzN6AFCf0o+IeoreyaOEuXGj3BLPLGDh/mwfrgdq7y906zvoEhu7WKaJPuq652/T0praVYPYpZvZwNap92IrlV+lAHlPii20KxubBNCvGmUSB5R5u9VGRg9OD1zXR+KJ4rnxv4bmt5Flik2sjqchhv6iusHh7SBB5I0218vOceX39c1ONLsA1uws4N1uAITs/wBWB02+lAF09aKKKACsrxPotv4g0O50664WVco46o45Vh9D+ma1aKabTugPk/VtLu9I1Kexv4jHcQthh2PoQe4PY1WVa+mfF3hTTvE9sqXqMlxGD5VxH99Pb3HtXjGv/D7XdHZ2Fsb23U8TWwLZ/wCA/eH5V61DExqKz0YHIhadsDAhhkHip5LWaFtssMqN6OhU/kas2el3966rZ2N1OScDy4mI/PGK6rpIDDtsxSSQN/Ccr7g16N8KfCj6zqqajex/8S20bcNw4lkHRR7A8n8q0fDPwonuruG78RP9mijJH2aJsyOPRmHAH05+lexWltDZ20VtaxJFBEu1I0GAo9q4K+KUU4QK5tCaiiivNJCiiigB0X+sT/eFblYcX+sT/eFblDAKKKKQBRRRQAUUUUAFFFFABRRRQAVn6l/rU/3f61oU140c5dFY+4oAxaK2PIi/55p+VHkRf880/KncDHorY8iL/nmn5UeRF/zzT8qLgY9FbHkRf880/KjyIv8Anmn5UXAxyM03pW15EX/PNPyo8iL/AJ5p+VFwMWitn7PD/wA8k/Kl+zw/88k/Ki4GLRW19nh/55J+VH2eH/nkn5UXAxaK2vs8P/PJPyo+zw/88k/Ki4GLRnitr7PD/wA8k/Kj7PD/AM8k/Ki4GLRW19nh/wCeSflR9nh/55J+VFwMWitr7PD/AM8k/Kj7PD/zyT8qLgYtFbX2eH/nkn5UfZ4f+eSflRcDFora+zw/88k/Kj7PD/zyT8qLgYtFbX2eH/nkn5UfZ4f+eSflRcDFoHHStr7PD/zyT8qPs8P/ADyT8qLgYtGa2vs8P/PJPyo+zw/88k/Ki4GLRW19nh/55J+VH2eH/nkn5UXAxaK2vs8P/PJPyo+zw/8APJPyouBi0VtfZ4f+eSflR9nh/wCeSflRcDHi/wBYn+8K3KjEEQORGmfpUlIAooooAKKKKACiiigAooooA//Z';
+var FORM_CSS = '*{box-sizing:border-box;margin:0;padding:0;}body{font-family:-apple-system,Arial,sans-serif;direction:rtl;font-size:13px;}.f-header{display:grid;grid-template-columns:200px 1fr 200px;border-bottom:1.5px solid #000;min-height:90px;}.hdr-r{padding:8px 12px;border-left:1.5px solid #000;display:flex;flex-direction:column;justify-content:center;align-items:center;font-size:11.5px;font-weight:700;line-height:1.7;text-align:center;}.hdr-c{padding:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}.hdr-c h1{font-size:16px;font-weight:800;line-height:1.25;}.hdr-c h1 span{font-size:13px;font-weight:700;}.hdr-l{padding:6px 10px;border-right:1.5px solid #000;display:flex;align-items:center;justify-content:center;}.hdr-l img{max-width:190px;max-height:75px;object-fit:contain;}.f-date{border-bottom:1.5px solid #000;padding:5px 12px;font-size:12px;font-weight:600;text-align:right;}.sec-hdr{background:#000;color:#fff;padding:5px 12px;display:flex;align-items:center;border-bottom:1.5px solid #000;}.sec-hdr .ar{font-size:12px;font-weight:700;}.sec-hdr .en{font-size:12px;font-weight:700;margin-right:auto;direction:ltr;}.info-tbl{border-bottom:1.5px solid #000;}.i-row{display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid #ccc;}.i-row:last-child{border-bottom:none;}.i-cell{padding:5px 10px;display:flex;align-items:center;gap:3px;min-height:30px;font-size:12px;}.i-cell.en{border-left:1.5px solid #000;direction:ltr;text-align:left;}.lbl{font-weight:700;white-space:nowrap;flex-shrink:0;}.stmt-wrap{border-bottom:1.5px solid #000;}.s-tbl{width:100%;border-collapse:collapse;}.s-tbl th,.s-tbl td{border:1px solid #bbb;padding:5px 8px;text-align:center;vertical-align:middle;font-size:12px;}.s-tbl thead th{background:#d5d5d5;font-weight:700;}.s-tbl .tot td{background:#d5d5d5;font-weight:700;}.sub{font-size:10px;font-weight:400;display:block;}.f-notes{border-bottom:1.5px solid #000;min-height:45px;}.sig-tbl{width:100%;border-collapse:collapse;}.sig-tbl td{border:1px solid #bbb;padding:4px 6px;vertical-align:middle;font-size:11px;}.sig-role{background:#d5d5d5;font-weight:700;text-align:center;width:33.33%;}.sig-name{text-align:center;line-height:1.8;font-size:11px;}.sig-cv{padding:4px 6px;text-align:center;}.sigpad{width:100%;height:68px;border:1px solid #aaa;background:#fff;display:block;}';
+var empCount=0,activeId=null,emps={};
+
+function makeFormHTML(){
+  return '<div class="f-header"><div class="hdr-r">إدارة الموارد البشرية<br>Human resources<br>management</div><div class="hdr-c"><h1>نموذج صرف واستحقاق<br><span>Payment &amp; maturity Form</span></h1></div><div class="hdr-l"><img src="'+LOGO+'" alt="قيمة المالية"></div></div>'
+  +'<div class="f-date">التاريخ &nbsp;<span contenteditable="true" data-field="date"></span>: م</div>'
+  +'<div class="sec-hdr"><span class="ar">معلومات الطلب</span><span class="en">Information Request</span></div>'
+  +'<div class="info-tbl">'
+  +'<div class="i-row"><div class="i-cell en"><span class="lbl">Name:&nbsp;</span><span contenteditable="true" data-field="name_en"></span></div><div class="i-cell"><span class="lbl">اسم الموظف:&nbsp;</span><span contenteditable="true" data-field="name_ar"></span></div></div>'
+  +'<div class="i-row"><div class="i-cell en"><span class="lbl">Employee\'s Number:&nbsp;</span><span contenteditable="true" data-field="num_en"></span></div><div class="i-cell"><span class="lbl">الرقم الوظيفي:&nbsp;</span><span contenteditable="true" data-field="num_ar"></span></div></div>'
+  +'<div class="i-row"><div class="i-cell en"><span class="lbl">Dept:&nbsp;</span><span contenteditable="true" data-field="dept_en"></span></div><div class="i-cell"><span class="lbl">الادارة:&nbsp;</span><span contenteditable="true" data-field="dept_ar"></span></div></div>'
+  +'<div class="i-row"><div class="i-cell en"><span class="lbl">Job Title:&nbsp;</span><span contenteditable="true" data-field="job_en"></span></div><div class="i-cell"><span class="lbl">الوظيفة:&nbsp;</span><span contenteditable="true" data-field="job_ar"></span></div></div>'
+  +'<div class="i-row"><div class="i-cell en"><span class="lbl">Notes:&nbsp;</span><span contenteditable="true" data-field="notes_en"></span></div><div class="i-cell"><span class="lbl">ملاحظات:&nbsp;</span><span contenteditable="true" data-field="notes_ar"></span></div></div>'
+  +'</div>'
+  +'<div class="sec-hdr"><span class="ar">خاص بقسم شؤون الموظفين</span><span class="en">Personnel department</span></div>'
+  +'<div class="stmt-wrap"><table class="s-tbl"><thead><tr><th style="width:24%">المبلغ المستحق<span class="sub">deserved amount</span></th><th>نوع البيان<span class="sub">Statement type</span></th><th style="width:18%">البيان<span class="sub">Statement</span></th></tr></thead>'
+  +'<tbody><tr><td><span contenteditable="true" data-field="amt"></span></td><td style="direction:rtl;text-align:right"><span contenteditable="true" data-field="stmt_type"></span></td><td><span contenteditable="true" data-field="stmt_name"></span></td></tr></tbody>'
+  +'<tfoot><tr class="tot"><td><span contenteditable="true" data-field="total"></span></td><td colspan="2">إجمالي المستحقات &nbsp; Total amount</td></tr></tfoot></table></div>'
+  +'<div class="f-notes"></div>'
+  +'<table class="sig-tbl">'
+  +'<tr><td class="sig-role">مدير الموارد البشرية<br><small>HR Manager</small></td><td class="sig-role">نائب الرئيس التنفيذي<br><small>CEO Deputy</small></td><td class="sig-role">الرئيس التنفيذي<br><small>CEO</small></td></tr>'
+  +'<tr>'
+  +'<td class="sig-name">الاسم: <span contenteditable="true" data-field="sig1_ar">مرح محمد العتيبي</span><br>Name: <span contenteditable="true" data-field="sig1_en"></span></td>'
+  +'<td class="sig-name">الاسم: <span contenteditable="true" data-field="sig2_ar">عبدالرحمن عمر الطمرة</span><br>Name: <span contenteditable="true" data-field="sig2_en"></span></td>'
+  +'<td class="sig-name">الاسم: <span contenteditable="true" data-field="sig3_ar">ابراهيم بن محمد النويبت</span><br>Name: <span contenteditable="true" data-field="sig3_en"></span></td>'
+  +'</tr>'
+  +'<tr>'
+  +'<td class="sig-cv"><div class="scw"><canvas class="sigpad" data-si="0" width="200" height="68"></canvas><span class="lbdg">✓ تم التوقيع</span></div><button class="clr-btn" onclick="clrSig(this)">مسح</button></td>'
+  +'<td class="sig-cv"><div class="scw"><canvas class="sigpad" data-si="1" width="200" height="68"></canvas><span class="lbdg">✓ تم التوقيع</span></div><button class="clr-btn" onclick="clrSig(this)">مسح</button></td>'
+  +'<td class="sig-cv"><div class="scw"><canvas class="sigpad" data-si="2" width="200" height="68"></canvas><span class="lbdg">✓ تم التوقيع</span></div><button class="clr-btn" onclick="clrSig(this)">مسح</button></td>'
+  +'</tr></table>';
+}
+
+function initSig(cv){
+  var ctx=cv.getContext('2d'),drw=false,dpr=window.devicePixelRatio||1;
+  function resize(){var r=cv.getBoundingClientRect();if(r.width<10)return;cv.width=r.width*dpr;cv.height=r.height*dpr;ctx.scale(dpr,dpr);ctx.strokeStyle='#111';ctx.lineWidth=1.8;ctx.lineCap='round';ctx.lineJoin='round';}
+  setTimeout(resize,80);
+  function pt(e){var r=cv.getBoundingClientRect(),s=e.touches?e.touches[0]:e;return{x:s.clientX-r.left,y:s.clientY-r.top};}
+  function sd(e){if(cv.classList.contains('locked'))return;e.preventDefault();drw=true;var p=pt(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function dd(e){if(cv.classList.contains('locked'))return;e.preventDefault();if(!drw)return;var p=pt(e);ctx.lineTo(p.x,p.y);ctx.stroke();cv.classList.add('signed');}
+  function ed(e){e.preventDefault();drw=false;}
+  cv.addEventListener('mousedown',sd);cv.addEventListener('mousemove',dd);cv.addEventListener('mouseup',ed);cv.addEventListener('mouseleave',ed);
+  cv.addEventListener('touchstart',sd,{passive:false});cv.addEventListener('touchmove',dd,{passive:false});cv.addEventListener('touchend',ed,{passive:false});
+}
+
+function lockCV(cv){
+  cv.classList.add('locked');
+  var bdg=cv.parentNode.querySelector('.lbdg');
+  if(bdg)bdg.style.display='inline-block';
+  var btn=cv.closest('.sig-cv').querySelector('.clr-btn');
+  if(btn)btn.style.display='none';
+}
+
+function clrSig(btn){
+  var cv=btn.previousElementSibling.querySelector('canvas.sigpad');
+  if(cv.classList.contains('locked'))return;
+  cv.getContext('2d').clearRect(0,0,cv.width,cv.height);
+  cv.classList.remove('signed');
+}
+
+function todayAr(){
+  var d=new Date(),y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dy=String(d.getDate()).padStart(2,'0');
+  return (y+'/'+m+'/'+dy).replace(/[0-9]/g,function(n){return'٠١٢٣٤٥٦٧٨٩'[n];});
+}
+
+function readData(form){
+  var data={};
+  form.querySelectorAll('[data-field]').forEach(function(el){data[el.getAttribute('data-field')]=el.innerHTML;});
+  data._sigs=[];
+  form.querySelectorAll('canvas.sigpad').forEach(function(cv){
+    data._sigs.push({img:cv.toDataURL('image/png'),signed:cv.classList.contains('signed'),locked:cv.classList.contains('locked')});
+  });
+  return data;
+}
+
+function writeData(form,data){
+  if(!data)return;
+  form.querySelectorAll('[data-field]').forEach(function(el){var k=el.getAttribute('data-field');if(data[k]!==undefined)el.innerHTML=data[k];});
+  if(data._sigs){
+    form.querySelectorAll('canvas.sigpad').forEach(function(cv,i){
+      var s=data._sigs[i];
+      if(!s||!s.signed)return;
+      var im=new Image();
+      im.onload=function(){
+        var dpr=window.devicePixelRatio||1,r=cv.getBoundingClientRect();
+        if(r.width>0){cv.width=r.width*dpr;cv.height=r.height*dpr;}
+        var ctx=cv.getContext('2d');ctx.scale(dpr,dpr);
+        ctx.drawImage(im,0,0,cv.width/dpr,cv.height/dpr);
+        cv.classList.add('signed');
+        if(s.locked)lockCV(cv);
+      };
+      im.src=s.img;
+    });
+  }
+}
+
+function shareLink(){
+  if(!activeId||!emps[activeId])return;
+  // Lock all signed canvases before sharing
+  emps[activeId].form.querySelectorAll('canvas.sigpad.signed:not(.locked)').forEach(lockCV);
+  var data=readData(emps[activeId].form);
+  try{
+    var json=JSON.stringify(data);
+    var b64=btoa(unescape(encodeURIComponent(json)));
+    var url=window.location.href.split('#')[0]+'#d='+b64;
+    if(navigator.share){navigator.share({title:'نموذج صرف واستحقاق',url:url}).catch(function(){});return;}
+    if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('✅ تم نسخ الرابط — أرسليه للتوقيع التالي');}).catch(function(){fbCopy(url);});}
+    else{fbCopy(url);}
+  }catch(e){showToast('⚠️ الرابط طويل جداً — استخدمي حفظ PDF');}
+}
+
+function fbCopy(t){
+  var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;opacity:0;';
+  document.body.appendChild(ta);ta.focus();ta.select();
+  try{document.execCommand('copy');showToast('✅ تم نسخ الرابط');}catch(e){showToast('⚠️ تعذّر النسخ');}
+  document.body.removeChild(ta);
+}
+
+function showToast(msg){
+  var t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');},3200);
+}
+
+function printCurrent(){
+  if(!activeId||!emps[activeId])return;
+  var form=emps[activeId].form,imgs=[];
+  form.querySelectorAll('canvas.sigpad').forEach(function(cv){imgs.push({src:cv.toDataURL('image/png'),signed:cv.classList.contains('signed')});});
+  var cl=form.cloneNode(true);
+  cl.querySelectorAll('canvas.sigpad').forEach(function(cv,i){
+    var im=document.createElement('img');im.src=imgs[i].src;
+    im.style.cssText='width:100%;height:68px;border:'+(imgs[i].signed?'1px solid #333':'1px solid #aaa')+';display:block;background:#fff;';
+    cv.parentNode.replaceChild(im,cv);
+  });
+  cl.querySelectorAll('.clr-btn,.lbdg').forEach(function(el){el.remove();});
+  cl.querySelectorAll('[contenteditable]').forEach(function(el){el.removeAttribute('contenteditable');});
+  var pw=window.open('','_blank','width=850,height=1100');
+  if(!pw){alert('يرجى السماح بالنوافذ المنبثقة');return;}
+  pw.document.write('<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>نموذج صرف واستحقاق</title><style>'+FORM_CSS+'body{padding:0;margin:0;}@media print{@page{margin:10mm;}}</style></head><body>'+cl.innerHTML+'</body></html>');
+  pw.document.close();
+  setTimeout(function(){try{pw.focus();pw.print();}catch(e){}},800);
+}
+
+function addEmp(data){
+  empCount++;
+  var id='e'+empCount,wrap=document.createElement('div');
+  wrap.className='form-wrap';wrap.id='form_'+id;
+  wrap.innerHTML=makeFormHTML();
+  document.getElementById('container').appendChild(wrap);
+  wrap.querySelector('[data-field="date"]').textContent=todayAr();
+  if(data)setTimeout(function(){writeData(wrap,data);},130);
+  wrap.querySelectorAll('canvas.sigpad').forEach(initSig);
+  var nm=(data&&data.name_ar)?data.name_ar.replace(/<[^>]*>/g,''):'موظف '+empCount;
+  var tab=document.createElement('button');
+  tab.className='emp-tab';tab.id='tab_'+id;tab.setAttribute('data-id',id);
+  tab.innerHTML='<span class="tn">'+nm+'</span><span class="del-x" data-id="'+id+'">✕</span>';
+  document.getElementById('mgrBar').insertBefore(tab,document.querySelector('.btn-add'));
+  emps[id]={form:wrap,tab:tab};switchTo(id);
+  var af=wrap.querySelector('[data-field="name_ar"]');
+  if(af)af.addEventListener('input',function(){tab.querySelector('.tn').textContent=this.textContent.trim()||'موظف';});
+  return id;
+}
+
+function switchTo(id){
+  Object.keys(emps).forEach(function(k){emps[k].form.classList.remove('active');emps[k].tab.classList.remove('active');});
+  if(emps[id]){emps[id].form.classList.add('active');emps[id].tab.classList.add('active');activeId=id;}
+}
+
+document.getElementById('mgrBar').addEventListener('click',function(e){
+  var dx=e.target.closest('.del-x'),tab=e.target.closest('.emp-tab');
+  if(dx){e.stopPropagation();var id=dx.getAttribute('data-id');
+    if(Object.keys(emps).length<=1){alert('لا يمكن حذف الموظف الأخير');return;}
+    if(!confirm('حذف هذا الموظف؟'))return;
+    emps[id].form.remove();emps[id].tab.remove();delete emps[id];
+    var r=Object.keys(emps);if(r.length)switchTo(r[0]);
+  }else if(tab){var id=tab.getAttribute('data-id');if(id)switchTo(id);}
+});
+
+function loadFromHash(){
+  var h=window.location.hash;
+  if(h&&h.indexOf('#d=')===0){
+    try{
+      var b64=h.slice(3),json=decodeURIComponent(escape(atob(b64))),data=JSON.parse(json);
+      addEmp(data);showToast('✅ تم تحميل النموذج — التواقيع المحفوظة مقفلة');return true;
+    }catch(e){console.error(e);}
+  }
+  return false;
+}
+
+if(!loadFromHash()){
+  addEmp(null);
+  setTimeout(function(){
+    var form=emps[activeId]&&emps[activeId].form;if(!form)return;
+    var f={name_en:'Osama Abdelwahab Moharam',name_ar:'محمود رزق احمد جاد',num_en:'29',num_ar:'68',dept_en:'Investment Banking Department',dept_ar:'ادارة العمليات وتقنية المعلومات',job_en:'Senior Advisory &amp; Arrangement Officer',job_ar:'مسؤول الخدمات المساندة',notes_en:'',notes_ar:'',amt:'SAR 1,647.75',stmt_type:'تعويض قيمة التذكرة عن الموظف 1447.75<br>رسوم خروج وعودة للموظف 200 ريال',stmt_name:'اجازة سنوية',total:'SAR 4,543.25'};
+    form.querySelectorAll('[data-field]').forEach(function(el){var k=el.getAttribute('data-field');if(f[k]!==undefined)el.innerHTML=f[k];});
+    emps[activeId].tab.querySelector('.tn').textContent='محمود رزق احمد جاد';
+  },100);
+}
+
+</script>
+</body>
+</html>
