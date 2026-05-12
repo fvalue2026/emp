@@ -155,6 +155,27 @@ function readData(form){
 function writeData(form,data){
   if(!data)return;
   form.querySelectorAll('[data-field]').forEach(function(el){var k=el.getAttribute('data-field');if(data[k]!==undefined)el.innerHTML=data[k];});
+  // Handle signature lock states (no image data in shared URL)
+  if(data._sigLocked){
+    form.querySelectorAll('canvas.sigpad').forEach(function(cv,i){
+      if(data._sigLocked[i]){
+        // Mark as locked with a visual indicator - awaiting this person's sig
+        lockCV(cv);
+        // Draw a "signed" placeholder
+        var ctx=cv.getContext('2d');
+        var r=cv.getBoundingClientRect();
+        var w=r.width||200, h=r.height||68;
+        ctx.fillStyle='rgba(46,125,50,0.08)';
+        ctx.fillRect(0,0,w,h);
+        ctx.fillStyle='#2e7d32';
+        ctx.font='12px -apple-system,Arial,sans-serif';
+        ctx.textAlign='center';
+        ctx.fillText('تم التوقيع ✓', w/2, h/2+4);
+        cv.classList.add('signed');
+      }
+    });
+  }
+  // Legacy: handle full sig data if present
   if(data._sigs){
     form.querySelectorAll('canvas.sigpad').forEach(function(cv,i){
       var s=data._sigs[i];
@@ -175,17 +196,24 @@ function writeData(form,data){
 
 function shareLink(){
   if(!activeId||!emps[activeId])return;
-  // Lock all signed canvases before sharing
+  // Lock all currently signed canvases
   emps[activeId].form.querySelectorAll('canvas.sigpad.signed:not(.locked)').forEach(lockCV);
   var data=readData(emps[activeId].form);
+  // Remove signature image data - too large for URL
+  // Only keep which slots are locked (signed), not the actual image
+  var shareData={};
+  var k;
+  for(k in data){if(k!=='_sigs')shareData[k]=data[k];}
+  shareData._sigLocked=[];
+  if(data._sigs){data._sigs.forEach(function(s){shareData._sigLocked.push(s.locked||false);});}
   try{
-    var json=JSON.stringify(data);
+    var json=JSON.stringify(shareData);
     var b64=btoa(unescape(encodeURIComponent(json)));
     var url=window.location.href.split('#')[0]+'#d='+b64;
     if(navigator.share){navigator.share({title:'نموذج صرف واستحقاق',url:url}).catch(function(){});return;}
     if(navigator.clipboard){navigator.clipboard.writeText(url).then(function(){showToast('✅ تم نسخ الرابط — أرسليه للتوقيع التالي');}).catch(function(){fbCopy(url);});}
     else{fbCopy(url);}
-  }catch(e){showToast('⚠️ الرابط طويل جداً — استخدمي حفظ PDF');}
+  }catch(e){showToast('⚠️ حدث خطأ في المشاركة');}
 }
 
 function fbCopy(t){
@@ -259,7 +287,7 @@ function loadFromHash(){
   if(h&&h.indexOf('#d=')===0){
     try{
       var b64=h.slice(3),json=decodeURIComponent(escape(atob(b64))),data=JSON.parse(json);
-      addEmp(data);showToast('✅ تم تحميل النموذج — التواقيع المحفوظة مقفلة');return true;
+      addEmp(data);showToast('✅ تم تحميل البيانات — وقّع في خانتك');return true;
     }catch(e){console.error(e);}
   }
   return false;
